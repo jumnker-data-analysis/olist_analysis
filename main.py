@@ -37,7 +37,7 @@ orders["purchase_day"] = orders["order_purchase_timestamp"].dt.day
 
 # Today's Goal 21/02/2026 
 # Analyse delivery performance and delay rate
-
+# Step 1 Delivery performance
 delivered=orders[orders["order_status"]=="delivered"].copy()
 
 delivered["delivery_days"]=(
@@ -58,3 +58,6 @@ print(delivered["delivery_days"].describe())
 
 print("\nDelivery_delay summary:")
 print(delivered["delivery_delay"].describe())
+
+# step 2 KPI + monthly trend (Power BI friendly)
+
