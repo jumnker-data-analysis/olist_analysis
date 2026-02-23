@@ -3,3 +3,7 @@ __pycache__/
 .vscode/
 *.__pyc
 data/
+# SQL database
+*.db
+*.sqlite
+*.sqlite3

@@ -50,14 +50,53 @@ delivered["delivery_delay"]=(
     delivered["order_estimated_delivery_date"]
 ).dt.days
 
-print("\nDelivery columns preview:")
-print(delivered[["delivery_days","delivery_delay"]].head(10))
+# print("\nDelivery columns preview:")
+# print(delivered[["delivery_days","delivery_delay"]].head(10))
 
-print("\nDelivery_days summary:")
-print(delivered["delivery_days"].describe())
+# print("\nDelivery_days summary:")
+# print(delivered["delivery_days"].describe())
 
-print("\nDelivery_delay summary:")
-print(delivered["delivery_delay"].describe())
+# print("\nDelivery_delay summary:")
+# print(delivered["delivery_delay"].describe())
 
 # step 2 KPI + monthly trend (Power BI friendly)
 
+# create omnthly column
+delivered["purchase_month"]= delivered["order_purchase_timestamp"].dt.to_period("M")
+# print(delivered[["order_purchase_timestamp","purchase_month"]].head())
+
+# create monthly KPI
+monthly_kpi = delivered.groupby("purchase_month").agg(
+    total_orders=("order_id", "count"),
+    avg_delivery_days=("delivery_days", "mean"),
+    avg_delay=("delivery_delay", "mean"),
+    delayed_orders=("delivery_delay", lambda x: (x > 0).sum())
+).reset_index()
+
+monthly_kpi["delay_rate"] = monthly_kpi["delayed_orders"] / monthly_kpi["total_orders"]
+
+monthly_kpi = monthly_kpi.sort_values("purchase_month")
+
+print(monthly_kpi.head())
+
+# visualise the Delay rate trend
+import matplotlib.pyplot as plt
+
+plt.figure()
+plt.plot(
+    monthly_kpi["purchase_month"].astype(str),
+    monthly_kpi["delay_rate"]
+)
+plt.xticks(rotation=45)
+plt.title("Monthly Delay Rate Trend")
+plt.xlabel("Purchase_month")
+plt.ylabel("Delay_rate")
+plt.tight_layout()
+plt.savefig("monthly_delay_trend.png",dpi=300)
+plt.show()
+# The spike month is 2018-02 and 2016-09 but there is 
+# only 1 order 2016-09 so we should ignore the noise 2016-09
+
+# Correlation between volume and delay rate:
+print("\nCorrelation between volume and delay rate:")
+print(monthly_kpi[["total_orders","delay_rate"]].corr())
