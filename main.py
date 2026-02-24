@@ -127,3 +127,8 @@ plt.tight_layout()
 plt.savefig("reports/figures/monthly_avg_delivery_delay_trend.png",dpi=300)
 plt.show()
 plt.close()
+
+# Observation:
+# If the trend increases -> operational inefficiency growing.
+# If decreasing -> logistics improving.
+# If stable -> process control stable.
