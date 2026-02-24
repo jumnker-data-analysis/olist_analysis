@@ -82,9 +82,11 @@ print(monthly_kpi.head())
 # visualise the Delay rate trend
 import matplotlib.pyplot as plt
 
-plt.figure()
+
+monthly_kpi["purchase_month"]=monthly_kpi["purchase_month"].astype(str)
+plt.figure(figsize=(10,5))
 plt.plot(
-    monthly_kpi["purchase_month"].astype(str),
+    monthly_kpi["purchase_month"],
     monthly_kpi["delay_rate"]
 )
 plt.xticks(rotation=45)
@@ -92,11 +94,36 @@ plt.title("Monthly Delay Rate Trend")
 plt.xlabel("Purchase_month")
 plt.ylabel("Delay_rate")
 plt.tight_layout()
-plt.savefig("monthly_delay_trend.png",dpi=300)
+plt.savefig("reports/figures/monthly_delay_trend.png",dpi=300)
 plt.show()
+plt.close()
 # The spike month is 2018-02 and 2016-09 but there is 
 # only 1 order 2016-09 so we should ignore the noise 2016-09
 
 # Correlation between volume and delay rate:
 print("\nCorrelation between volume and delay rate:")
 print(monthly_kpi[["total_orders","delay_rate"]].corr())
+
+delivered["order_delivered_customer_date"]= pd.to_datetime(delivered["order_delivered_customer_date"])
+delivered["month"]= delivered["order_delivered_customer_date"].dt.to_period("M")
+
+monthly_delay = (
+    delivered.groupby("month")["delivery_delay"]
+    .mean()
+    .reset_index())
+print(monthly_delay)
+
+monthly_delay["month"]=monthly_delay["month"].astype(str)
+
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(10,5))
+plt.plot(monthly_delay["month"],monthly_delay["delivery_delay"])
+plt.xticks(rotation=45)
+plt.title("Average Delivery Delay by Month")
+plt.xlabel("Month")
+plt.tight_layout()
+
+plt.savefig("reports/figures/monthly_avg_delivery_delay_trend.png",dpi=300)
+plt.show()
+plt.close()
