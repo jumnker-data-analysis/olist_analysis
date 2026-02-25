@@ -132,3 +132,6 @@ plt.close()
 # If the trend increases -> operational inefficiency growing.
 # If decreasing -> logistics improving.
 # If stable -> process control stable.
+
+# export clean dataset for modeling
+monthly_kpi.to_csv("data/monthly_kpi.csv",index=False)
