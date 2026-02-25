@@ -1,20 +1,23 @@
+## Project Structure
+
+- main.py → Data preparation and KPI generation
+- analysis/regression.py → Regression modeling
+- data/ → Raw and derived datasets
+- reports/figures/ → Model visualizations
+
 Regression Analysis Summary
 
-
 Objective
-
 
 Investigate drivers of monthly delivery delay rate using volume and delivery time metrics.
 
 Models Tested
-
 
 Model 1 — Linear (Volume Only)
 
 R² ≈ 0.17
 
 Volume alone has weak explanatory power.
-
 
 
 Model 4 — Quadratic Volume
@@ -26,7 +29,6 @@ Suggests nonlinear relationship.
 Efficiency improves with scale initially.
 
 Slight congestion effect at extreme volumes.
-
 
 
 Model 5 — Delivery Days + Interaction
