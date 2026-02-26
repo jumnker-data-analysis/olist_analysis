@@ -53,6 +53,26 @@ print("Coefficients:", dict(zip(X2.columns, m2.coef_)))
 print("R2:", r2_score(y, pred2))
 print("MAE:", mean_absolute_error(y, pred2))
 
+X2 = monthly_kpi[["total_orders", "avg_delivery_days"]]
+y = monthly_kpi["delay_rate"]
+
+# Define weights (inverse of delivery days)
+weights = 1 / (monthly_kpi["avg_delivery_days"] + 1e-6)
+
+# Fit weighted regression
+model_wls = LinearRegression()
+model_wls.fit(X2, y, sample_weight=weights)
+
+pred_wls = model_wls.predict(X2)
+
+from sklearn.metrics import r2_score, mean_absolute_error
+
+print("\nWeighted Regression (WLS)")
+print("Coefficients:", dict(zip(X2.columns, model_wls.coef_)))
+print("R2:", r2_score(y, pred_wls))
+print("MAE:", mean_absolute_error(y, pred_wls))
+
+
 # The volume is weak
 # Add time trend
 
@@ -155,3 +175,63 @@ plt.tight_layout()
 
 plt.savefig("reports/figures/model6_log_volume.png", dpi=300)
 plt.close()
+
+# ----- Residual Diagnostics for Model 4 26/02-----
+
+residuals4 = y - pred4
+
+plt.figure(figsize=(8, 5))
+plt.scatter(pred4, residuals4, alpha=0.7)
+plt.axhline(0, color='red')
+plt.xlabel("Predicted Delay Rate")
+plt.ylabel("Residuals")
+plt.title("Residual Plot - Quadratic Model")
+plt.tight_layout()
+plt.savefig("reports/figures/model4_residuals.png", dpi=300)
+plt.close()
+
+print("Residual mean (Model 4):", residuals4.mean())
+print("Residual std (Model 4):", residuals4.std())
+
+
+# -- Comparison Models
+model_comparison = pd.DataFrame({
+"Model": [
+"Linear Volume",
+"Volume + Delivery Days",
+"Volume + Time",
+"Quadratic Volume",
+"Log Volume"
+],
+"R2": [
+r2_score(y, pred1),
+r2_score(y, pred2),
+r2_score(y, pred3),
+r2_score(y, pred4),
+r2_score(y, pred6)
+],
+"MAE": [
+mean_absolute_error(y, pred1),
+mean_absolute_error(y, pred2),
+mean_absolute_error(y, pred3),
+mean_absolute_error(y, pred4),
+mean_absolute_error(y, pred6)
+]
+})
+
+print("\nModel Comparison Table:")
+print(model_comparison)
+
+
+# ----- Ridge Regression on Quadratic Model -----
+
+from sklearn.linear_model import Ridge
+
+ridge = Ridge(alpha=1.0)
+ridge.fit(X4, y)
+pred_ridge = ridge.predict(X4)
+
+print("\nRidge Regression (Quadratic)")
+print("Coefficients:", dict(zip(X4.columns, ridge.coef_)))
+print("R2:", r2_score(y, pred_ridge))
+print("MAE:", mean_absolute_error(y, pred_ridge))
