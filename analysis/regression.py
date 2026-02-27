@@ -235,3 +235,108 @@ print("\nRidge Regression (Quadratic)")
 print("Coefficients:", dict(zip(X4.columns, ridge.coef_)))
 print("R2:", r2_score(y, pred_ridge))
 print("MAE:", mean_absolute_error(y, pred_ridge))
+
+# Optional future improvement:
+# • Regime segmentation (low vs high stress)
+# • Quantile regression
+# • Robust standard errors
+# • Time series modeling
+
+# 1. Regime Segmentation (Low vs High Stress)
+## Step 1 — Split Data
+threshold = monthly_kpi["total_orders"].median()
+
+low_regime = monthly_kpi[monthly_kpi["total_orders"] < threshold]
+high_regime = monthly_kpi[monthly_kpi["total_orders"] >= threshold]
+
+##Step 2 — Fit OLS Separately 
+import statsmodels.api as sm
+
+# LOW REGIME
+X_low = sm.add_constant(low_regime["total_orders"])
+y_low = low_regime["delay_rate"]
+
+model_low = sm.OLS(y_low, X_low).fit()
+
+print("LOW STRESS REGIME")
+print(model_low.summary())
+
+# HIGH REGIME
+X_high = sm.add_constant(high_regime["total_orders"])
+y_high = high_regime["delay_rate"]
+
+model_high = sm.OLS(y_high, X_high).fit()
+
+print("HIGH STRESS REGIME")
+print(model_high.summary())
+
+
+## Instead of splitting manually, you can also 
+## create interaction model:
+monthly_kpi["high_stress"] = (monthly_kpi["total_orders"] >= threshold).astype(int)
+
+X = monthly_kpi[["total_orders", "high_stress"]]
+X["interaction"] = X["total_orders"] * X["high_stress"]
+
+X = sm.add_constant(X)
+y = monthly_kpi["delay_rate"]
+
+model_interaction = sm.OLS(y, X).fit()
+print(model_interaction.summary())
+
+# Fit regression separately
+
+
+# 2. Quantile Regression
+import statsmodels.formula.api as smf
+
+model_q50 = smf.quantreg("delay_rate ~ total_orders", monthly_kpi).fit(q=0.5)
+model_q90 = smf.quantreg("delay_rate ~ total_orders", monthly_kpi).fit(q=0.9)
+
+print(model_q50.summary())
+print(model_q90.summary())
+
+# 3. Robust Standard Errors
+import statsmodels.api as sm
+
+X = sm.add_constant(monthly_kpi["total_orders"])
+y = monthly_kpi["delay_rate"]
+
+model = sm.OLS(y, X).fit(cov_type="HC3")
+
+print(model.summary())
+
+# 4. Time Series Modeling
+## Step1
+
+from statsmodels.graphics.tsaplots import plot_acf
+import matplotlib.pyplot as plt
+from pathlib import Path
+
+# Ensure output folder exists
+fig_path = Path("reports/figures")
+fig_path.mkdir(parents=True, exist_ok=True)
+
+# Create figure
+plt.figure(figsize=(8, 5))
+
+plot_acf(monthly_kpi["delay_rate"], lags=10)
+
+plt.title("ACF - Monthly Delay Rate")
+plt.tight_layout()
+
+# Save file
+plt.savefig(fig_path / "acf_delay_rate.png", dpi=300)
+
+# Show plot
+plt.show()
+
+# Close to free memory
+plt.close()
+
+## Step2
+from statsmodels.tsa.ar_model import AutoReg
+
+model_ar = AutoReg(monthly_kpi["delay_rate"], lags=1).fit()
+print(model_ar.summary())
+
