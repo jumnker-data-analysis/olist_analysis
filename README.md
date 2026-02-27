@@ -224,3 +224,4 @@ Delay behavior is operationally driven, not demand-driven.
 Volume exhibits nonlinear effects but is not the dominant factor.
 
 Delivery duration is the structural backbone of delay variation.
+
