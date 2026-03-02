@@ -1,138 +1,140 @@
+from pathlib import Path
+
 import pandas as pd
-# Load dataset
-orders= pd.read_csv("data/olist_orders_dataset.csv")
+import matplotlib.pyplot as plt
 
-# Show basic info
-#print("First 5 rows:")
-#print(orders.head())
 
-#print("\nDataset info:")
-#print(orders.info())
+# ----------------------------
+# Config
+# ----------------------------
+DATA_DIR = Path("data")
+REPORT_DIR = Path("reports")
+FIG_DIR = REPORT_DIR / "figures"
 
-#print("\nSummary statistics:")
-#print(orders.describe())
+ORDERS_CSV = DATA_DIR / "olist_orders_dataset.csv"
+OUT_MONTHLY_KPI = DATA_DIR / "monthly_kpi.csv"
 
-import pandas as pd 
 
-orders= pd.read_csv(
-    "data/olist_orders_dataset.csv",
-#convert character into datetime
-parse_dates=[
-"order_purchase_timestamp",
-"order_approved_at",
-"order_delivered_carrier_date",
-"order_delivered_customer_date",
-"order_estimated_delivery_date",
-]
-)
-#print("\nDataset info:")
-#orders.info()
+# ----------------------------
+# Helpers
+# ----------------------------
+def ensure_dirs() -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    FIG_DIR.mkdir(parents=True, exist_ok=True)
 
-#create new time features
-orders["purchase_year"] = orders["order_purchase_timestamp"].dt.year
-orders["purchase_month"] = orders["order_purchase_timestamp"].dt.month
-orders["purchase_day"] = orders["order_purchase_timestamp"].dt.day
-#print(orders[["order_purchase_timestamp","purchase_year",
-# "purchase_month","purchase_day"]].head())
 
-# Today's Goal 21/02/2026 
-# Analyse delivery performance and delay rate
-# Step 1 Delivery performance
-delivered=orders[orders["order_status"]=="delivered"].copy()
+def load_orders(path: Path) -> pd.DataFrame:
+# Parse important datetime columns in ONE read
+    date_cols = [
+    "order_purchase_timestamp",
+    "order_approved_at",
+    "order_delivered_carrier_date",
+    "order_delivered_customer_date",
+    "order_estimated_delivery_date",
+    ]
+    return pd.read_csv(path, parse_dates=date_cols)
 
-delivered["delivery_days"]=(
-    delivered["order_delivered_customer_date"]-
-    delivered["order_purchase_timestamp"]
-).dt.days
 
-delivered["delivery_delay"]=(
-    delivered["order_delivered_customer_date"]-
-    delivered["order_estimated_delivery_date"]
-).dt.days
+def build_delivered_table(orders: pd.DataFrame) -> pd.DataFrame:
+    delivered = orders.loc[orders["order_status"] == "delivered"].copy()
 
-# print("\nDelivery columns preview:")
-# print(delivered[["delivery_days","delivery_delay"]].head(10))
+# Delivery days: delivered_customer - purchase
+    delivered["delivery_days"] = (
+    delivered["order_delivered_customer_date"] - delivered["order_purchase_timestamp"]
+    ).dt.days
 
-# print("\nDelivery_days summary:")
-# print(delivered["delivery_days"].describe())
+# Delivery delay: delivered_customer - estimated_delivery
+    delivered["delivery_delay"] = (
+    delivered["order_delivered_customer_date"] - delivered["order_estimated_delivery_date"]
+    ).dt.days
 
-# print("\nDelivery_delay summary:")
-# print(delivered["delivery_delay"].describe())
+# Safe guards: drop rows where dates missing or negative weird values
+    delivered = delivered.dropna(subset=["delivery_days", "delivery_delay"])
+    return delivered
 
-# step 2 KPI + monthly trend (Power BI friendly)
 
-# create omnthly column
-delivered["purchase_month"]= delivered["order_purchase_timestamp"].dt.to_period("M")
-# print(delivered[["order_purchase_timestamp","purchase_month"]].head())
+def build_monthly_kpi(delivered: pd.DataFrame) -> pd.DataFrame:
+    delivered["purchase_month"] = delivered["order_purchase_timestamp"].dt.to_period("M")
 
-# create monthly KPI
-monthly_kpi = delivered.groupby("purchase_month").agg(
+    monthly = (
+    delivered.groupby("purchase_month")
+    .agg(
     total_orders=("order_id", "count"),
     avg_delivery_days=("delivery_days", "mean"),
     avg_delay=("delivery_delay", "mean"),
-    delayed_orders=("delivery_delay", lambda x: (x > 0).sum())
-).reset_index()
+    delayed_orders=("delivery_delay", lambda x: (x > 0).sum()),
+    )
+    .reset_index()
+    .sort_values("purchase_month")
+    )
 
-monthly_kpi["delay_rate"] = monthly_kpi["delayed_orders"] / monthly_kpi["total_orders"]
+    monthly["delay_rate"] = monthly["delayed_orders"] / monthly["total_orders"]
 
-monthly_kpi = monthly_kpi.sort_values("purchase_month")
+# nice for plotting
+    monthly["purchase_month_str"] = monthly["purchase_month"].astype(str)
 
-print(monthly_kpi.head())
-
-# visualise the Delay rate trend
-import matplotlib.pyplot as plt
+    return monthly
 
 
-monthly_kpi["purchase_month"]=monthly_kpi["purchase_month"].astype(str)
-plt.figure(figsize=(10,5))
-plt.plot(
-    monthly_kpi["purchase_month"],
-    monthly_kpi["delay_rate"]
-)
-plt.xticks(rotation=45)
-plt.title("Monthly Delay Rate Trend")
-plt.xlabel("Purchase_month")
-plt.ylabel("Delay_rate")
-plt.tight_layout()
-plt.savefig("reports/figures/monthly_delay_trend.png",dpi=300)
-plt.show()
-plt.close()
-# The spike month is 2018-02 and 2016-09 but there is 
-# only 1 order 2016-09 so we should ignore the noise 2016-09
+def save_monthly_kpi(monthly_kpi: pd.DataFrame, out_path: Path) -> None:
+    monthly_kpi.to_csv(out_path, index=False)
 
-# Correlation between volume and delay rate:
-print("\nCorrelation between volume and delay rate:")
-print(monthly_kpi[["total_orders","delay_rate"]].corr())
 
-delivered["order_delivered_customer_date"]= pd.to_datetime(delivered["order_delivered_customer_date"])
-delivered["month"]= delivered["order_delivered_customer_date"].dt.to_period("M")
+def plot_monthly_delay_rate(monthly_kpi: pd.DataFrame) -> None:
+    plt.figure(figsize=(10, 5))
+    plt.plot(monthly_kpi["purchase_month_str"], monthly_kpi["delay_rate"])
+    plt.xticks(rotation=45)
+    plt.title("Monthly Delay Rate Trend")
+    plt.xlabel("Purchase Month")
+    plt.ylabel("Delay Rate")
+    plt.tight_layout()
+    plt.savefig(FIG_DIR / "monthly_delay_rate_trend.png", dpi=300)
+    plt.close()
 
-monthly_delay = (
-    delivered.groupby("month")["delivery_delay"]
-    .mean()
-    .reset_index())
-print(monthly_delay)
 
-monthly_delay["month"]=monthly_delay["month"].astype(str)
+def plot_monthly_avg_delay(monthly_kpi: pd.DataFrame) -> None:
+    plt.figure(figsize=(10, 5))
+    plt.plot(monthly_kpi["purchase_month_str"], monthly_kpi["avg_delay"])
+    plt.xticks(rotation=45)
+    plt.title("Monthly Average Delivery Delay by Month")
+    plt.xlabel("Purchase Month")
+    plt.ylabel("Average Delivery Delay (days)")
+    plt.tight_layout()
+    plt.savefig(FIG_DIR / "monthly_avg_delivery_delay_trend.png", dpi=300)
+    plt.close()
 
-import matplotlib.pyplot as plt
 
-plt.figure(figsize=(10,5))
-plt.plot(monthly_delay["month"],monthly_delay["delivery_delay"])
-plt.xticks(rotation=45)
-plt.title("Average Delivery Delay by Month")
-plt.xlabel("Month")
-plt.tight_layout()
+def plot_volume_vs_delayrate(monthly_kpi: pd.DataFrame) -> None:
+    plt.figure(figsize=(7, 5))
+    plt.scatter(monthly_kpi["total_orders"], monthly_kpi["delay_rate"])
+    plt.title("Volume vs Delay Rate (Monthly)")
+    plt.xlabel("Total Orders")
+    plt.ylabel("Delay Rate")
+    plt.tight_layout()
+    plt.savefig(FIG_DIR / "volume_vs_delay_rate.png", dpi=300)
+    plt.close()
 
-plt.savefig("reports/figures/monthly_avg_delivery_delay_trend.png",dpi=300)
-plt.show()
-plt.close()
 
-# Observation:
-# If the trend increases -> operational inefficiency growing.
-# If decreasing -> logistics improving.
-# If stable -> process control stable.
+# ----------------------------
+# Main
+# ----------------------------
+def main() -> None:
+    ensure_dirs()
 
-# export clean dataset for modeling
-monthly_kpi.to_csv("data/monthly_kpi.csv",index=False)
+orders = load_orders(ORDERS_CSV)
+delivered = build_delivered_table(orders)
+monthly_kpi = build_monthly_kpi(delivered)
 
+save_monthly_kpi(monthly_kpi, OUT_MONTHLY_KPI)
+
+plot_monthly_delay_rate(monthly_kpi)
+plot_monthly_avg_delay(monthly_kpi)
+plot_volume_vs_delayrate(monthly_kpi)
+
+print("✅ Saved:", OUT_MONTHLY_KPI)
+print("✅ Figures saved to:", FIG_DIR)
+
+
+if __name__ == "__main__":
+    main()
