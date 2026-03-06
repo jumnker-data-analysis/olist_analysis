@@ -57,7 +57,7 @@ def build_delivered_table(orders: pd.DataFrame) -> pd.DataFrame:
 def build_monthly_kpi(delivered: pd.DataFrame) -> pd.DataFrame:
     delivered["purchase_month"] = delivered["order_purchase_timestamp"].dt.to_period("M")
 
-    monthly = (
+    monthly_kpi = (
     delivered.groupby("purchase_month")
     .agg(
     total_orders=("order_id", "count"),
@@ -69,12 +69,12 @@ def build_monthly_kpi(delivered: pd.DataFrame) -> pd.DataFrame:
     .sort_values("purchase_month")
     )
 
-    monthly["delay_rate"] = monthly["delayed_orders"] / monthly["total_orders"]
+    monthly_kpi["delay_rate"] = monthly_kpi["delayed_orders"] / monthly_kpi["total_orders"]
 
 # nice for plotting
-    monthly["purchase_month_str"] = monthly["purchase_month"].astype(str)
+    monthly_kpi["purchase_month_str"] = monthly_kpi["purchase_month"].astype(str)
 
-    return monthly
+    return monthly_kpi
 
 
 def save_monthly_kpi(monthly_kpi: pd.DataFrame, out_path: Path) -> None:
