@@ -1,227 +1,219 @@
-## Project Structure
+# Olist Delivery Performance Analysis
 
-- main.py → Data preparation and KPI generation
-- analysis/regression.py → Regression modeling
-- data/ → Raw and derived datasets
-- reports/figures/ → Model visualizations
+## Project Overview
 
-Regression Analysis Summary
+This project analyzes delivery performance using the Olist e-commerce dataset.
+The goal is to understand operational factors affecting delivery delays and to build a clean analytical pipeline for KPI generation and visualization.
 
-Objective
+The project demonstrates a typical **data analyst workflow**:
 
-Investigate drivers of monthly delivery delay rate using volume and delivery time metrics.
+Raw Data → Data Cleaning → KPI Generation → Statistical Analysis → Dashboard Visualization → Business Insights
 
-Models Tested
+---
 
-Model 1 — Linear (Volume Only)
+# Objectives
 
-R² ≈ 0.17
+The main objectives of this project are:
 
-Volume alone has weak explanatory power.
+• Build a clean and reproducible **data processing pipeline** using Python
+• Analyze **delivery performance trends over time**
+• Identify factors influencing **delivery delay rate**
+• Generate monthly operational KPIs for dashboard reporting
+• Support business decision-making through data insights
 
-Model 4 — Quadratic Volume
+---
 
-R² ≈ 0.91
+# Tech Stack
 
-Suggests nonlinear relationship.
+Python (Pandas, Numpy)
 
-Efficiency improves with scale initially.
+Data Visualization
+• Matplotlib
+• Power BI
+Statistical Modeling
+• Scikit-learn
+• Statsmodels
+Tools
+• VS Code
+• Git / GitHub
 
-Slight congestion effect at extreme volumes.
+---
 
+# Project Structure
+olist_analysis
 
-Model 5 — Delivery Days + Interaction
+data/
 
-R² ≈ 0.92+
+raw datasets
 
-Average delivery days strongly explains delay rate.
 
-Structural time factors dominate.
+reports/
 
+figures and charts
 
-Model 6 — Log(Volume)
 
-R² ≈ 0.32
+analysis/
 
-Diminishing marginal impact of volume.
+regression models
 
-Scale effect exists but not primary driver.
+diagnostics
 
-Key Business Insight
 
-Delay rate is primarily driven by delivery duration rather than total order volume.
+main.py
 
-Volume exhibits nonlinear behavior, but structural logistics efficiency and external postal system performance appear to be the dominant factors.
+data pipeline script
 
-# Next Steps
-Residual diagnostics
 
-Model comparison table
+regression.py
 
-Multicollinearity check
+statistical analysis
 
-Robust regression testing
 
-# Olist Delay Rate Analysis – Model Evaluation
 
-Objective
+monthly_kpi.csv
 
-To identify the key drivers of monthly delay rate using regression modeling and evaluate model robustness through diagnostics and alternative specifications.
+clean KPI dataset
 
-Modeling Process
 
-We tested multiple regression specifications to understand the structural relationship between delay rate and operational variables.
 
-# Model 1: Volume Only (Linear)
+README.md
 
-Model:delay_rate ~ total_orders
+---
 
-R² ≈ 0.056
+# Data Pipeline
 
-Conclusion:
+The data pipeline is implemented in **main.py**.
 
-Order volume alone has very weak explanatory power. Volume is not the primary driver of delay.
+Key steps:
 
-# Model 2: Volume + Average Delivery Days (Core Model)
+1. Load raw datasets
+2. Parse datetime columns
+3. Filter delivered orders
+4. Calculate delivery time metrics
+5. Aggregate monthly performance KPIs
+6. Export clean dataset for visualization
 
-Model:delay_rate ~ total_orders + avg_delivery_days
+Example KPI generation:
 
-R² ≈ 0.915
+monthly = delivered.groupby(“purchase_month”).agg(
 
-MAE ≈ 0.036
+total_orders=(“order_id”,“count”),
 
-Conclusion:
+avg_delivery_days=(“delivery_days”,“mean”),
 
-Delay rate is primarily driven by delivery duration.
+avg_delay=(“delivery_delay”,“mean”),
 
-Business Interpretation:
+delayed_orders=(“delivery_delay”,lambda x:(x>0).sum())
 
-Operational efficiency (delivery performance) dominates delay behavior. Volume amplifies stress but is not the core determinant.
+)
 
-This is the selected final model.
+---
 
-# Model 3: Volume + Time Trend
+# Key Metrics
 
-Model: delay_rate ~ total_orders + month_index
+The project calculates the following operational metrics:
 
-Low R².
+| Metric | Description |
+|------|-------------|
+| total_orders | number of orders per month |
+| avg_delivery_days | average delivery time |
+| avg_delay | average delivery delay |
+| delayed_orders | number of delayed orders |
+| delay_rate | percentage of delayed deliveries |
 
-Conclusion:
+---
 
-No significant linear time trend explains delay variation.
+# Statistical Analysis
 
-# Model 4: Quadratic Volume
+Several regression models were tested to understand delivery delay behavior.
 
-Model: delay_rate ~ total_orders + total_orders²
+Models explored:
 
-R² ≈ 0.208
+• Linear regression
+• Log-transformed order volume
+• Interaction models
+• Ridge regression
+• Weighted regression
 
-Conclusion:
+Model diagnostics included:
 
-Some nonlinear congestion effect exists at extreme volumes, but explanatory power remains limited.
+• Residual analysis
+• Heteroskedasticity observation
+• Autocorrelation testing (ACF)
 
-# Model 5: Volume + Delivery Days + Interaction
+---
 
-Model: delay_rate ~ total_orders + avg_delivery_days + interaction
+# Key Insights
 
-Conclusion:
+Initial analysis suggests:
 
-Interaction effects do not materially improve explanatory power. Delivery duration remains dominant.
+• Delivery delay is **not strongly driven by order volume alone**
 
-# Model 6: Log Volume
+• Higher **average delivery days strongly correlates with delay rate**
 
-Model:delay_rate ~ log(total_orders)
+• Operational issues may be related to:
 
-R² ≈ 0.323
+- warehouse processing efficiency
+- logistics bottlenecks
+- delivery network capacity
 
-Conclusion:
+These insights suggest delay performance may be driven by **multiple compounded operational factors**.
 
-There is evidence of diminishing marginal effect of scale, but volume remains secondary to delivery duration.
+---
 
-# Model Diagnostics
+# Visualization
 
-Residual Analysis
+A Power BI dashboard was created using the generated KPI dataset.
 
-Residual plots indicate heteroskedasticity:
+Dashboard pages include:
 
-Residual variance increases at higher predicted delay rates.
+Page 1 – Delivery Performance Overview
+• Total orders
+• Delay rate trend
+• Average delivery days
 
-This suggests higher uncertainty during stress regimes.
+Page 2 – Operational Drivers
+• Order volume vs delay rate
+• Delivery performance trends
 
-Interpretation:
+---
 
-Variance increases due to structural operational stress rather than random noise.
+# Future Improvements
 
-# Ridge Regression
+Potential extensions for deeper analysis:
 
-Ridge regularization was applied to test for overfitting.
+• Regime segmentation (high vs low volume periods)
+• Quantile regression
+• Robust standard errors
+• Time-series modeling
+• More detailed operational feature engineering
 
-Result:
+---
 
-No meaningful change in R² or MAE.
+# Learning Outcomes
 
-Coefficients remain stable.
+This project demonstrates the ability to:
 
-Conclusion:
+• build a reproducible data pipeline
+• perform exploratory data analysis
+• apply regression modeling
+• create business-oriented insights
+• present results through dashboards
 
-The model does not suffer from severe overfitting.
+---
 
-# Weighted Regression
+# Author
 
-Weighted regression (inverse of delivery days) was tested to address heteroskedasticity.
+Leo
+Aspiring Data Analyst
 
-Result:
+Background:
+• Taiwanese
+• 11 years living in Sydney
+• Currently based in Bangkok
+• Transitioning into data analytics
 
-R² decreased
+Focus areas:
+Python • Data Analysis • Visualization • Business Insights
 
-MAE increased
-
-# Conclusion:
-
-High-delay months contain structural signal, not noise.
-
-Down-weighting them reduces explanatory power.
-
-Therefore, weighted regression is not appropriate for this dataset.
-
-# Final Model Selection
-
-Selected Model:
-
-delay_rate ~ total_orders + avg_delivery_days
-
-# Reason:
-
-Highest explanatory power
-
-Lowest MAE
-
-Stable under regularization
-
-Robust against weighting
-
-# Business Implications
-Delay rate is primarily driven by delivery performance.
-
-Volume amplifies stress but does not independently drive delays.
-
-Operational KPIs should focus on:
-
-Average delivery lead time
-
-Warehouse processing time
-
-Inventory availability rate
-
-Order fulfillment cycle time
-
-On-time dispatch rate
-
-# Key Insight
-
-Delay behavior is operationally driven, not demand-driven.
-
-Volume exhibits nonlinear effects but is not the dominant factor.
-
-Delivery duration is the structural backbone of delay variation.
-
+---
