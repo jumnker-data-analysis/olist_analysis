@@ -3,7 +3,7 @@
 ## Project Overview
 
 This project analyzes delivery performance using the Olist e-commerce dataset.
-The goal is to understand operational factors affecting delivery delays and to build a clean analytical pipeline for KPI generation and visualization.
+The goal is to understand operational factors affecting delivery delays, build a clean analytical pipeline for KPI generation, and extend the analisis with revenue-based metrics such as Avereage Order Value (AOV) and visualization.
 
 The project demonstrates a typical **data analyst workflow**:
 
@@ -20,6 +20,7 @@ The main objectives of this project are:
 • Identify factors influencing **delivery delay rate**
 • Generate monthly operational KPIs for dashboard reporting
 • Support business decision-making through data insights
+• Explore revenue-based KPIs such as monthly Avereage Order Value (AOV)
 
 ---
 
@@ -45,34 +46,23 @@ olist_analysis
 data/
 
 raw datasets
+mothly_kpi.csv -> clean KPI dataset
 
+notebooks/
+
+aov_exploration.ipynb -> delivered-order AOV exploration
+aov_exploration_monthly.ipynb -> monthly AOV exploration and validation
+
+analysis/
+
+regression.py -> regression models and diagnostics
 
 reports/
 
 figures and charts
 
+main.py ->data pipeline script
 
-analysis/
-
-regression models
-
-diagnostics
-
-
-main.py
-
-data pipeline script
-
-
-regression.py
-
-statistical analysis
-
-
-
-monthly_kpi.csv
-
-clean KPI dataset
 
 
 
@@ -120,6 +110,14 @@ The project calculates the following operational metrics:
 | avg_delay | average delivery delay |
 | delayed_orders | number of delayed orders |
 | delay_rate | percentage of delayed deliveries |
+| aov | average order value for delivered orders with valid payment records|
+
+---
+
+# Data Notes
+
+Monthly AOV is calculated using delivered orders matched to payment records.
+Some early months may appear in the order-based KPI dataset but be excluded from AOV analysis if matching payment records are unavailable.
 
 ---
 
