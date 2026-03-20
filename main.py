@@ -13,6 +13,7 @@ FIG_DIR = REPORT_DIR / "figures"
 
 ORDERS_CSV = DATA_DIR / "olist_orders_dataset.csv"
 OUT_MONTHLY_KPI = DATA_DIR / "monthly_kpi.csv"
+OUT_OVERALL_KPI = DATA_DIR / "overall_kpi.csv"
 
 
 # ----------------------------
@@ -56,6 +57,7 @@ def build_delivered_table(orders: pd.DataFrame) -> pd.DataFrame:
 
 def build_monthly_kpi(delivered: pd.DataFrame) -> pd.DataFrame:
     delivered["purchase_month"] = delivered["order_purchase_timestamp"].dt.to_period("M")
+    delivered["is_delayed"] = delivered["delivery_delay"] >0
 
     monthly_kpi = (
     delivered.groupby("purchase_month")
@@ -63,7 +65,7 @@ def build_monthly_kpi(delivered: pd.DataFrame) -> pd.DataFrame:
     total_orders=("order_id", "count"),
     avg_delivery_days=("delivery_days", "mean"),
     avg_delay=("delivery_delay", "mean"),
-    delayed_orders=("delivery_delay", lambda x: (x > 0).sum()),
+    delayed_orders=("is_delayed", "sum"),
     )
     .reset_index()
     .sort_values("purchase_month")
@@ -76,10 +78,32 @@ def build_monthly_kpi(delivered: pd.DataFrame) -> pd.DataFrame:
 
     return monthly_kpi
 
+def build_overall_kpi(delivered: pd.DataFrame) -> pd.DataFrame:
+    delivered["is_delayed"] = delivered["delivery_delay"] > 0
+
+    overall_kpi = pd.DataFrame([{
+    "total_orders": delivered["order_id"].count(),
+    "delayed_orders": delivered["is_delayed"].sum(),
+    "delay_rate": delivered["is_delayed"].mean(),
+    "avg_delivery_days": delivered["delivery_days"].mean(),
+    "avg_delay": delivered["delivery_delay"].mean(),
+    }])
+
+    overall_kpi = overall_kpi.round({
+    "delay_rate": 5,
+    "avg_delivery_days": 2,
+        "avg_delay": 2
+    })
+    
+    overall_kpi["on_time_rate"] = 1- overall_kpi["delay_rate"]
+    
+    return overall_kpi
 
 def save_monthly_kpi(monthly_kpi: pd.DataFrame, out_path: Path) -> None:
     monthly_kpi.to_csv(out_path, index=False)
 
+def save_overall_kpi(overall_kpi: pd.DataFrame, out_path: Path) -> None:
+    overall_kpi.to_csv(out_path, index=False)
 
 def plot_monthly_delay_rate(monthly_kpi: pd.DataFrame) -> None:
     plt.figure(figsize=(10, 5))
@@ -124,15 +148,19 @@ def main() -> None:
 
 orders = load_orders(ORDERS_CSV)
 delivered = build_delivered_table(orders)
+
 monthly_kpi = build_monthly_kpi(delivered)
+overall_kpi = build_overall_kpi(delivered)
 
 save_monthly_kpi(monthly_kpi, OUT_MONTHLY_KPI)
+save_overall_kpi(overall_kpi, OUT_OVERALL_KPI)
 
 plot_monthly_delay_rate(monthly_kpi)
 plot_monthly_avg_delay(monthly_kpi)
 plot_volume_vs_delayrate(monthly_kpi)
 
 print("✅ Saved:", OUT_MONTHLY_KPI)
+print("✅ Saved:", OUT_OVERALL_KPI)
 print("✅ Figures saved to:", FIG_DIR)
 
 
