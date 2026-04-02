@@ -143,19 +143,19 @@ Model diagnostics included:
 
 # Key Insights
 
-Initial analysis suggests:
+Delivery delays are not primarily driven by order volume, suggesting operational inefficiencies rather than demand spikes
 
-• Delivery delay is **not strongly driven by order volume alone**
+Higher average delivery time strongly correlates with delay rate, indicating process inefficiencies
 
-• Higher **average delivery days strongly correlates with delay rate**
+Delay performance is likely influenced by:
 
-• Operational issues may be related to:
+warehouse processing time
 
-- warehouse processing efficiency
-- logistics bottlenecks
-- delivery network capacity
+logistics bottlenecks
 
-These insights suggest delay performance may be driven by **multiple compounded operational factors**.
+delivery capacity constraints
+
+Delay behavior is driven by multiple operational factors, not a single variable
 
 ---
 
