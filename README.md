@@ -8,7 +8,19 @@ The goal is to understand delivery delays, build a clean Python data pipeline, g
 
 This project demonstrates a practical data analyst workflow:
 
-Raw Data → Data Cleaning → KPI Generation → Exploratory Analysis → Statistical Modeling → Dashboard Visualization → Business Insights
+Raw Data
+↓
+Data Cleaning
+↓
+KPI Generation
+↓
+Exploratory Analysis
+↓
+Statistical Modeling
+↓
+Dashboard Visualization
+↓
+Business Insights
 
 ---
 
@@ -136,7 +148,7 @@ Several regression models were tested to understand delivery delay behavior:
 ---
 
 ## Key Insights
-- Delivery delays are not primarily driven by order volume, suggesting that operational inefficiencies may be more important than demand spikes.
+- Regression analysis suggests order volume has limited explanatory power for delivery delays, indicating that operational factors may play a larger role. 
 - Higher average delivery time is strongly associated with higher delay rates.
 - Delivery performance is likely influenced by multiple operational factors, including warehouse processing time, logistics bottlenecks, and delivery capacity constraints.
 - Delay behavior cannot be explained by a single variable, so future analysis should include more operational features.
